@@ -10,18 +10,14 @@ import org.json.JSONTokener;
 
 public class Explorer implements IExplorerRaid {
 
-    boolean fly = true;
-    int num = 0;
-    private int range = -1;
-    private JSONObject extras = new JSONObject();
-
     private final Logger logger = LogManager.getLogger();
+    private int num = 0; // Counter to track the decision sequence
 
     @Override
     public void initialize(String s) {
         logger.info("** Initializing the Exploration Command Center");
         JSONObject info = new JSONObject(new JSONTokener(new StringReader(s)));
-        logger.info("** Initialization info:\n {}",info.toString(2));
+        logger.info("** Initialization info:\n {}", info.toString(2));
 
         String direction = info.getString("heading");
         Integer batteryLevel = info.getInt("budget");
@@ -34,49 +30,42 @@ public class Explorer implements IExplorerRaid {
     public String takeDecision() {
         JSONObject decision = new JSONObject();
 
-        if (num < 51) {
-            decision.put("action", fly ? "scan" : "fly");
-            fly = !fly;
-        } 
-        else if (num >= 51 && num <= 54) {
-            String direction = switch (num) {
-                case 51 -> "N";
-                case 52 -> "E";
-                case 53 -> "S";
-                case 54 -> "W";
-                default -> "N";
-            };
-            decision.put("action", "echo").put("parameters", new JSONObject().put("direction", direction));
-        } 
-        else if (num == 55) {
-            range = getRange();
-            logger.info("Range detected: {}", range);
-
-            if (range > 0) {
-                decision.put("action", "heading").put("parameters", new JSONObject().put("direction", "S"));
+        if (num < 40) {  // First 20 fly operations with scans, so doubled
+            if (num % 2 == 0) {
+                // Fly on even numbers
+                decision.put("action", "fly");
             } else {
-                decision.put("action", "stop");
+                // Scan on odd numbers
+                decision.put("action", "scan");
             }
-        } 
-        else if (num > 55 && num <= (55 + 2 * range)) {
-            decision.put("action", (num - 55) % 2 == 0 ? "fly" : "scan");
-        } 
-        else {
+        } else if (num == 40) {
+            // Change heading to South at step 21
+            JSONObject parameters = new JSONObject();
+            parameters.put("direction", "S");
+            decision.put("action", "heading");
+            decision.put("parameters", parameters);
+        } else if (num > 40 && num <= 90) { // Next 25 fly operations with scans, so doubled
+            if ((num - 41) % 2 == 0) {
+                // Fly on even numbers after heading change
+                decision.put("action", "fly");
+            } else {
+                // Scan on odd numbers after heading change
+                decision.put("action", "scan");
+            }
+        } else {
+            // Stop after all actions
             decision.put("action", "stop");
         }
 
-        num++;
+        num++;  // Increment the counter to track which decision to make next
         return decision.toString();
-    }
-
-    public int getRange() {
-        return extras.has("range") ? extras.getInt("range") : -1;
     }
 
     @Override
     public void acknowledgeResults(String s) {
         JSONObject response = new JSONObject(new JSONTokener(new StringReader(s)));
-        logger.info("** Response received:\n"+response.toString(2));
+        logger.info("** Response received:\n" + response.toString(2));
+
         Integer cost = response.getInt("cost");
         logger.info("The cost of the action was {}", cost);
         String status = response.getString("status");
