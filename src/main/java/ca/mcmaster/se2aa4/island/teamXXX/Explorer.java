@@ -12,6 +12,8 @@ public class Explorer implements IExplorerRaid {
 
     boolean fly = true;
     int num = 0;
+    private int range = -1;
+    private JSONObject extras = new JSONObject();
 
     private final Logger logger = LogManager.getLogger();
 
@@ -20,8 +22,10 @@ public class Explorer implements IExplorerRaid {
         logger.info("** Initializing the Exploration Command Center");
         JSONObject info = new JSONObject(new JSONTokener(new StringReader(s)));
         logger.info("** Initialization info:\n {}",info.toString(2));
+
         String direction = info.getString("heading");
         Integer batteryLevel = info.getInt("budget");
+
         logger.info("The drone is facing {}", direction);
         logger.info("Battery level is {}", batteryLevel);
     }
@@ -30,19 +34,43 @@ public class Explorer implements IExplorerRaid {
     public String takeDecision() {
         JSONObject decision = new JSONObject();
 
-        if (fly && num<30) {
-            decision.put("action", "scan");
-            num++;
-            fly = false;
-        } else if (num<30) {
-            decision.put("action", "fly");
-            num++;
-            fly = true;
-        } else {
-            decision.put("action", "stop"); // we stop the exploration immediately
+        if (num < 51) {
+            decision.put("action", fly ? "scan" : "fly");
+            fly = !fly;
+        } 
+        else if (num >= 51 && num <= 54) {
+            String direction = switch (num) {
+                case 51 -> "N";
+                case 52 -> "E";
+                case 53 -> "S";
+                case 54 -> "W";
+                default -> "N";
+            };
+            decision.put("action", "echo").put("parameters", new JSONObject().put("direction", direction));
+        } 
+        else if (num == 55) {
+            range = getRange();
+            logger.info("Range detected: {}", range);
+
+            if (range > 0) {
+                decision.put("action", "heading").put("parameters", new JSONObject().put("direction", "S"));
+            } else {
+                decision.put("action", "stop");
+            }
+        } 
+        else if (num > 55 && num <= (55 + 2 * range)) {
+            decision.put("action", (num - 55) % 2 == 0 ? "fly" : "scan");
+        } 
+        else {
+            decision.put("action", "stop");
         }
-        //logger.info("** Decision: {}",decision.toString());
+
+        num++;
         return decision.toString();
+    }
+
+    public int getRange() {
+        return extras.has("range") ? extras.getInt("range") : -1;
     }
 
     @Override
