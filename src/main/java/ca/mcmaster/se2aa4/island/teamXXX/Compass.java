@@ -7,6 +7,10 @@ public class Compass {
         this.currentDirection = initialDirection;
     }
 
+    public String current() {
+        return currentDirection;
+    }
+
     public void updateDirection(String newDirection) {
         this.currentDirection = newDirection;
     }
