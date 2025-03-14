@@ -7,6 +7,8 @@ public class Decisions {
     public String fly() {
         JSONObject decision = new JSONObject();
         decision.put("action", "fly");
+        //JSONObject info = new JSONObject(new JSONTokener(new StringReader(s)));
+        //int batteryLevel = info.getInt("budget");
         return decision.toString();
     }
 
