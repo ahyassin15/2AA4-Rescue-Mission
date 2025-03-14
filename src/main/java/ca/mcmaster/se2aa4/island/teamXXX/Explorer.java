@@ -32,15 +32,13 @@ public class Explorer implements IExplorerRaid {
     @Override
     public String takeDecision() {
 
-        /*
+
         // ignore This and FindIsland
         // Simply ask findIsland for the next command
         String nextCmd = findIsland.nextDecision();
         logger.info("** nextDecision from FindIsland => {}", nextCmd);
         return nextCmd;
 
-         */
-        return decisionMaker.stop();
     }
 
     @Override

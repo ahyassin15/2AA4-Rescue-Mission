@@ -19,8 +19,7 @@ public class FindIsland {
     private int rangeLeft = -1;
 
     private boolean groundFound = false;
-    private int steps = 0;
-    private final int MAX_STEPS = 200; // Example safety limit to avoid infinite loops
+    private int num = 0;
 
     // Example toggle to see if we should do “front / right / left” next
     // or we can track them systematically
@@ -36,8 +35,8 @@ public class FindIsland {
      * for the last command. Here we parse 'found' and 'range' if the last
      * command was an echo. This method is where we handle ANY new data.
      */
-    public void acknowledgeResults(String jsonResponse) {
-        JSONObject response = new JSONObject(new JSONTokener(jsonResponse));
+    public void acknowledgeResults(String jsonResponse1) {
+        JSONObject response = new JSONObject(new JSONTokener(jsonResponse1));
         JSONObject extras = response.optJSONObject("extras");
         if (extras != null) {
             String found = extras.optString("found", "NONE");
@@ -55,12 +54,12 @@ public class FindIsland {
             } else if (echoStage == 2) {
                 foundLeft = found;
                 rangeLeft = range;
+            } else if (echoStage > 10){
+                foundFront = found;
+                rangeFront = range;
             }
+            echoStage ++;
 
-            // If any direction is GROUND, we can mark it.
-            if ("GROUND".equals(found)) {
-                groundFound = true;
-            }
         }
     }
 
@@ -68,17 +67,18 @@ public class FindIsland {
      * Called by Explorer.takeDecision(). This method decides what command to send next.
      */
     public String nextDecision() {
-        // If we already found ground in a previous step, we can choose to stop or do something else
-        if (groundFound) {
-            // For instance, we might just stop:
-            return decisionMaker.stop();
-        }
 
-        // Some iteration limit to avoid infinite loops
-        steps++;
-        if (steps > MAX_STEPS) {
-            // fallback if no ground found
-            return decisionMaker.stop();
+        if (groundFound) {
+            if (rangeFront == 1){
+                return decisionMaker.stop();
+            } else {
+                num ++;
+                if (num %2 == 0) {
+                    return decisionMaker.fly();
+                }else{
+                    return decisionMaker.echo(compass.current());
+                }
+            }
         }
 
         // We'll do a 3-step pattern: echo front, echo right, echo left -> then interpret
@@ -87,53 +87,57 @@ public class FindIsland {
 
         // 0 => echo front
         if (echoStage == 0) {
-            echoStage++;
             return decisionMaker.echo(compass.current());
         }
         // 1 => echo right
         else if (echoStage == 1) {
-            echoStage++;
             return decisionMaker.echo(compass.right());
-        }
+            }
         // 2 => echo left
         else if (echoStage == 2) {
-            echoStage++;
             return decisionMaker.echo(compass.left());
         }
-        // 3 => interpret the data from front/right/left, then reset stage to 0
         else {
+
+            /* After echoing to all directions, if the front of the drone is close to being out of range
+             change directions to the most appropriate
+             */
+            if (!groundFound && rangeFront <= 2){
+                if (rangeRight <= 2){
+                    compass.updateDirection(compass.left());
+                    echoStage = -1;
+                    return decisionMaker.heading(compass.current());
+                }
+                else {
+                    echoStage = -1;
+                    compass.updateDirection(compass.right());
+                    return decisionMaker.heading(compass.current());
+                }
+            }
             // interpret front/right/left
             // If any direction is GROUND, decide how to move
             if ("GROUND".equals(foundFront)) {
                 groundFound = true;
-                return decisionMaker.fly(); // Or heading if you prefer
+                echoStage = 11;
+                return decisionMaker.fly();
             }
             if ("GROUND".equals(foundRight)) {
                 groundFound = true;
                 compass.updateDirection(compass.right());
+                echoStage = 11;
                 return decisionMaker.heading(compass.current());
             }
             if ("GROUND".equals(foundLeft)) {
                 groundFound = true;
                 compass.updateDirection(compass.left());
+                echoStage = 11;
                 return decisionMaker.heading(compass.current());
             }
 
-            // If no ground found, compare ranges
-            if (rangeFront >= rangeRight && rangeFront >= rangeLeft) {
-                return decisionMaker.fly();
-            } else if (rangeRight >= rangeFront && rangeRight >= rangeLeft) {
-                compass.updateDirection(compass.right());
-                return decisionMaker.heading(compass.current());
-            } else {
-                compass.updateDirection(compass.left());
-                return decisionMaker.heading(compass.current());
-            }
-            // After deciding, reset for next cycle
-            // We might do that AFTER we return.
-            // So let's reset:
-            // but let's do it next time after we see the results of the move
-            // echoStage = 0;
+            echoStage = -1;
+            return decisionMaker.fly();
+
         }
+
     }
 }
