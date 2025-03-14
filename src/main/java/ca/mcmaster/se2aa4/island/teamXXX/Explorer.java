@@ -3,7 +3,6 @@ package ca.mcmaster.se2aa4.island.teamXXX;
 import java.io.StringReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import eu.ace_design.island.bot.IExplorerRaid;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -12,6 +11,7 @@ public class Explorer implements IExplorerRaid {
 
     private final Logger logger = LogManager.getLogger();
     private int num = 0; // Counter to track the decision sequence
+    private Decisions decisionMaker = new Decisions(); // Instance of Decisions class
 
     @Override
     public void initialize(String s) {
@@ -28,37 +28,28 @@ public class Explorer implements IExplorerRaid {
 
     @Override
     public String takeDecision() {
-        JSONObject decision = new JSONObject();
+        String result;  // Declare a variable to hold the result temporarily
 
-        if (num < 40) {  // First 20 fly operations with scans, so doubled
+        if (num < 40) {
             if (num % 2 == 0) {
-                // Fly on even numbers
-                decision.put("action", "fly");
+                result = decisionMaker.fly();
             } else {
-                // Scan on odd numbers
-                decision.put("action", "scan");
+                result = decisionMaker.echo("E");
             }
         } else if (num == 40) {
-            // Change heading to South at step 21
-            JSONObject parameters = new JSONObject();
-            parameters.put("direction", "S");
-            decision.put("action", "heading");
-            decision.put("parameters", parameters);
-        } else if (num > 40 && num <= 90) { // Next 25 fly operations with scans, so doubled
+            result = decisionMaker.heading("S");
+        } else if (num > 40 && num <= 120) {
             if ((num - 41) % 2 == 0) {
-                // Fly on even numbers after heading change
-                decision.put("action", "fly");
+                result = decisionMaker.fly();
             } else {
-                // Scan on odd numbers after heading change
-                decision.put("action", "scan");
+                result = decisionMaker.echo("S");
             }
         } else {
-            // Stop after all actions
-            decision.put("action", "stop");
+            result = decisionMaker.stop();
         }
 
-        num++;  // Increment the counter to track which decision to make next
-        return decision.toString();
+        num++; // Increment the counter before returning the result
+        return result; // Now return the result after incrementing
     }
 
     @Override
@@ -78,5 +69,4 @@ public class Explorer implements IExplorerRaid {
     public String deliverFinalReport() {
         return "no creek found";
     }
-
 }
