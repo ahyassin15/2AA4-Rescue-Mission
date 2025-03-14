@@ -12,37 +12,41 @@ public class Explorer implements IExplorerRaid {
     private final Logger logger = LogManager.getLogger();
     private int num = 0; // Counter to track the decision sequence
     private Decisions decisionMaker = new Decisions(); // Instance of Decisions class
+    private Compass compass; // Compass instance to keep track of direction
 
     @Override
     public void initialize(String s) {
         logger.info("** Initializing the Exploration Command Center");
         JSONObject info = new JSONObject(new JSONTokener(new StringReader(s)));
-        logger.info("** Initialization info:\n {}", info.toString(2));
-
+        logger.info("** Initialization info:\n {}",info.toString(2));
         String direction = info.getString("heading");
         Integer batteryLevel = info.getInt("budget");
+
+        compass = new Compass(direction);
 
         logger.info("The drone is facing {}", direction);
         logger.info("Battery level is {}", batteryLevel);
     }
 
+
     @Override
     public String takeDecision() {
-        String result;  // Declare a variable to hold the result temporarily
+        String result;
 
         if (num < 40) {
             if (num % 2 == 0) {
                 result = decisionMaker.fly();
             } else {
-                result = decisionMaker.echo("E");
+                result = decisionMaker.echo(compass.left()); // Echo to the left of the current direction
             }
         } else if (num == 40) {
-            result = decisionMaker.heading("S");
+            result = decisionMaker.heading(compass.right()); // Change heading to the right of the drone
+            compass.updateDirection(compass.right()); // Updates compass direction
         } else if (num > 40 && num <= 120) {
             if ((num - 41) % 2 == 0) {
                 result = decisionMaker.fly();
             } else {
-                result = decisionMaker.echo("S");
+                result = decisionMaker.echo(compass.right()); // Echo to the right of the new direction
             }
         } else {
             result = decisionMaker.stop();
