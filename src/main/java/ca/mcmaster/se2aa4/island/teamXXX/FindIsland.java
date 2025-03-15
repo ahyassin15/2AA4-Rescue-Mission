@@ -3,12 +3,17 @@ package ca.mcmaster.se2aa4.island.teamXXX;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-public class FindIsland {
+/**
+ * Implements the logic plus the
+ * ExplorationPhase interface to allow easy phase switching once ground is found.
+ */
+public class FindIsland implements ExplorationPhase {
 
+    // Object creation to help make decision and know headings
     private final Decisions decisionMaker;
     private final Compass compass;
 
-    // Store the data from the latest echo results
+    // The echo data for each side of the drone
     private String foundFront = "NONE";
     private int rangeFront = -1;
 
@@ -16,14 +21,16 @@ public class FindIsland {
     private int rangeRight = -1;
 
     private String foundLeft = "NONE";
-    private int rangeLeft = -1;
+    private int rangeLeft = -1; // Not needed but keep just in case
 
+    // boolean values that track if the ground is found and or reached
     private boolean groundFound = false;
-    private int num = 0;
+    private boolean groundReached = false;
 
-    // Example toggle to see if we should do “front / right / left” next
-    // or we can track them systematically
+    // Additional counters / toggles
+    private int num = 0;
     private int echoStage = 0;
+    private int randomEcho = 11; // keep this over 3
 
     public FindIsland(Decisions decisionMaker, Compass compass) {
         this.decisionMaker = decisionMaker;
@@ -31,20 +38,20 @@ public class FindIsland {
     }
 
     /**
-     * The Explorer calls this whenever the engine returns a JSON response
-     * for the last command. Here we parse 'found' and 'range' if the last
-     * command was an echo. This method is where we handle ANY new data.
+     * Called by Explorer. Acknowledges the engine's JSON response for the last action,
+     * updating echo data, checking if ground is found, etc.
      */
-    public void acknowledgeResults(String jsonResponse1) {
-        JSONObject response = new JSONObject(new JSONTokener(jsonResponse1));
+    @Override
+    public void acknowledgeResults(String jsonResponse) {
+
+        // Handles JSON and strips important info
+        JSONObject response = new JSONObject(new JSONTokener(jsonResponse));
         JSONObject extras = response.optJSONObject("extras");
         if (extras != null) {
             String found = extras.optString("found", "NONE");
             int range = extras.optInt("range", -1);
 
-            // We'll store these based on echoStage.
-            // For example, echoStage 0 => front, echoStage 1 => right, echoStage 2 => left
-            // Then we cycle back or do logic as needed.
+            // Store found/range based on echoStage
             if (echoStage == 0) {
                 foundFront = found;
                 rangeFront = range;
@@ -54,90 +61,101 @@ public class FindIsland {
             } else if (echoStage == 2) {
                 foundLeft = found;
                 rangeLeft = range;
-            } else if (echoStage > 10){
+            } else if (echoStage >= randomEcho) {
+                // This covers the scenario where echoStage was bumped
+                // to 11 or beyond if ground was found
+                // Can fix logic for this later!! but for now it works
                 foundFront = found;
                 rangeFront = range;
             }
-            echoStage ++;
 
+            // Increment echoStage for the next cycle
+            echoStage++;
         }
     }
 
     /**
-     * Called by Explorer.takeDecision(). This method decides what command to send next.
+     * Called by Explorer.takeDecision(). This method decides what command
+     * to send next, preserving your existing echo logic.
      */
+    @Override
     public String nextDecision() {
-
+        // If we already found ground, use post-ground logic:
         if (groundFound) {
-            if (rangeFront == 1){
-                return decisionMaker.stop();
+            // If the forward range is 1, then ground reached and patrol Island will deal with the rest
+            // return fly because its 1 block away from the island, if it flies it will actually be 0 blocks away
+            // Need to return a decision so that's the logic chosen.
+            if (rangeFront == 1) {
+                groundReached = true;
+                return decisionMaker.fly();
             } else {
-                num ++;
-                if (num %2 == 0) {
+                // Alternate between fly and echo
+                // Echo is just for testing so don't need num
+                // can replace everything in else with just return decisionMaker.fly()
+                num++;
+                if (num % 2 == 0) {
                     return decisionMaker.fly();
-                }else{
+                } else {
                     return decisionMaker.echo(compass.current());
                 }
             }
         }
 
-        // We'll do a 3-step pattern: echo front, echo right, echo left -> then interpret
-        // For example, we do stage 0 => echo front, stage 1 => echo right, stage 2 => echo left,
-        // then stage 3 => interpret the results of all three, do a move, then repeat.
-
-        // 0 => echo front
+        // The pattern: echo front, echo right, echo left, then interpret
         if (echoStage == 0) {
             return decisionMaker.echo(compass.current());
-        }
-        // 1 => echo right
-        else if (echoStage == 1) {
+        } else if (echoStage == 1) {
             return decisionMaker.echo(compass.right());
-            }
-        // 2 => echo left
-        else if (echoStage == 2) {
+        } else if (echoStage == 2) {
             return decisionMaker.echo(compass.left());
-        }
-        else {
+        } else {
+            // After echoing all directions, interpret the data
 
-            /* After echoing to all directions, if the front of the drone is close to being out of range
-             change directions to the most appropriate
-             */
-            if (!groundFound && rangeFront <= 2){
-                if (rangeRight <= 2){
+            // If you are going out of range, this if statement changes your heading to stay in zone
+            // If the front is close (≤2), choose left/right
+            if (!groundFound && rangeFront <= 2) {
+                if (rangeRight <= 2) {
                     compass.updateDirection(compass.left());
-                    echoStage = -1;
+                    echoStage = -1; // reset echo stage
                     return decisionMaker.heading(compass.current());
-                }
-                else {
+                } else {
                     echoStage = -1;
                     compass.updateDirection(compass.right());
                     return decisionMaker.heading(compass.current());
                 }
             }
-            // interpret front/right/left
+
             // If any direction is GROUND, decide how to move
+            // Changes heading to the side that found the ground
             if ("GROUND".equals(foundFront)) {
                 groundFound = true;
-                echoStage = 11;
+                echoStage = randomEcho;
                 return decisionMaker.fly();
             }
             if ("GROUND".equals(foundRight)) {
                 groundFound = true;
                 compass.updateDirection(compass.right());
-                echoStage = 11;
+                echoStage = randomEcho;
                 return decisionMaker.heading(compass.current());
             }
             if ("GROUND".equals(foundLeft)) {
                 groundFound = true;
                 compass.updateDirection(compass.left());
-                echoStage = 11;
+                echoStage = randomEcho;
                 return decisionMaker.heading(compass.current());
             }
 
+            // Otherwise, just fly forward if nothing special
+            // Resest echo stage to cycle back to front of drone
             echoStage = -1;
             return decisionMaker.fly();
-
         }
+    }
 
+    /**
+     * Explorer can call this to see if we should switch out of FindIsland.
+     */
+    public boolean isIslandReached() {
+        return groundReached;
     }
 }
