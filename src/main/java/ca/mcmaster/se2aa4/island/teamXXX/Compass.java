@@ -1,6 +1,7 @@
 package ca.mcmaster.se2aa4.island.teamXXX;
 
 public class Compass {
+    
     private String currentDirection;
 
     public Compass(String initialDirection) {

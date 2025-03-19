@@ -112,7 +112,7 @@ public class FindIsland implements ExplorationPhase {
             // After echoing all directions, interpret the data
 
             // If you are going out of range, this if statement changes your heading to stay in zone
-            // If the front is close (≤2), choose left/right
+            // If the front is close (<=2), choose left/right
             if (!groundFound && rangeFront <= 2) {
                 if (rangeRight <= 2) {
                     compass.updateDirection(compass.left());
