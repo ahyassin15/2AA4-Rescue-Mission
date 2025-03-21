@@ -11,13 +11,18 @@ import org.apache.logging.log4j.Logger;
 public class CellTracker {
 
     //inner class to represent x,y position
-    private static class Position {
+    static class Position {
         double x;
         double y;
 
         Position(double x, double y) {
             this.x = x;
             this.y = y;
+        }
+
+        @Override
+        public String toString() {
+            return "(" + String.format("%.2f", x) + ", " + String.format("%.2f", y) + ")";
         }
     }
 
@@ -52,6 +57,14 @@ public class CellTracker {
         return emergencySites.keySet();
     }
 
+    public Position getCreekPosition(String creekId) {
+        return creeks.get(creekId);
+    }
+    
+    public Position getEmergencySitePosition(String siteId) {
+        return emergencySites.get(siteId);
+    }
+    
     public boolean hasCreek(String uid) {
         return creeks.containsKey(uid);
     }
