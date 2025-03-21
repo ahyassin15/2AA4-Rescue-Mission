@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.xmlgraphics.ps.dsc.CellTracker;
 
 public class CellTracker {
 
@@ -59,6 +58,39 @@ public class CellTracker {
 
     public boolean hasEmergencySite(String uid) {
         return emergencySites.containsKey(uid);
+    }
+
+    //find the nearest creek to a given emergency site by UID
+    public String findNearestCreekToSite(String emergencySiteId) {
+        
+        if (!emergencySites.containsKey(emergencySiteId)) {
+            return null;
+        }
+
+        Position site = emergencySites.get(emergencySiteId);
+        String nearestCreek = null;
+        double minDist = Double.MAX_VALUE;
+
+        for (Map.Entry<String, Position> entry : creeks.entrySet()) {
+            
+            Position creekPos = entry.getValue();
+            
+            double dx = creekPos.x - site.x;
+            double dy = creekPos.y - site.y;
+            double distSquared = dx * dx + dy * dy;
+
+            if (distSquared < minDist) {
+                minDist = distSquared;
+                nearestCreek = entry.getKey();
+            }
+        }
+
+        return nearestCreek;
+    }
+
+    public void reset() {
+        creeks.clear();
+        emergencySites.clear();
     }
 
 }
