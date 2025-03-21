@@ -18,12 +18,11 @@ public class PatrolIsland implements ExplorationPhase {
 
     @Override
     public void acknowledgeResults(String jsonResponse) {
-        if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
-            return;
-        }
+        
         // parse extras if needed
         JSONObject response = new JSONObject(new JSONTokener(jsonResponse));
         JSONObject extras = response.optJSONObject("extras");
+        
         if (extras != null) {
             // handle scanning data, etc.
         }
