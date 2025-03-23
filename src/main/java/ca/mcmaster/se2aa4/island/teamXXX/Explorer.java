@@ -62,7 +62,10 @@ public class Explorer implements IExplorerRaid {
 
     @Override
     public String deliverFinalReport() {
-        logger.info("The closest creek is " + rescueDrone.getClosestInlet());
-        return rescueDrone.getClosestInlet();
+        logger.info("Generating final report...");
+        String report = rescueDrone.generateFinalReport();
+        logger.info("Final Report:\n\n{}\n", report);
+        System.out.println("\n\n" + report + "\n");
+        return report;
     }
 }

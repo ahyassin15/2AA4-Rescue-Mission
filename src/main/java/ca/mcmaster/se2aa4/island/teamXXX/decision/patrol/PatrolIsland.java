@@ -54,6 +54,11 @@ public class PatrolIsland implements CommandDecisions {
     }
 
     @Override
+    public String generateFinalReport() {
+        return data.generateFinalReport().toString();
+    }
+
+    @Override
     public String getClosestInlet() {
         return data.getClosestInlet();
     }

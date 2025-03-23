@@ -1,6 +1,7 @@
 package ca.mcmaster.se2aa4.island.teamXXX.data;
 
-import ca.mcmaster.se2aa4.island.teamXXX.calculations.NearestInletFinder;
+import ca.mcmaster.se2aa4.island.teamXXX.reporting.NearestInletFinder;
+import ca.mcmaster.se2aa4.island.teamXXX.reporting.FinalReport;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -13,6 +14,7 @@ public class ResultAggregator {
     private final ArrayList<Integer> inletYs = new ArrayList<>();
     private int emergencyX = 0;
     private int emergencyY = 0;
+    private String emergencyId;
     private JSONObject extras;
     public ArrayList<String> inletIds = new ArrayList<>();
 
@@ -75,7 +77,14 @@ public class ResultAggregator {
     public boolean emergencySiteIsFound() {
         if (extras.has("sites")) {
             JSONArray sitesArray = extras.getJSONArray("sites");
-            emergencySiteFound = (!sitesArray.isEmpty());
+            if (!sitesArray.isEmpty()) {
+                emergencySiteFound = true;
+                emergencyId = sitesArray.getString(0);
+            } else {
+                emergencySiteFound = false;
+            }
+        } else {
+            emergencySiteFound = false;
         }
         return emergencySiteFound;
     }
@@ -88,6 +97,14 @@ public class ResultAggregator {
     public void storeCoordinatesEmergency(int x, int y) {
         emergencyX = x;
         emergencyY = y;
+    }
+
+    public FinalReport generateFinalReport() {
+        int nearestIndex = inletIds.indexOf(getClosestInlet());
+        int nearestX = inletXs.get(nearestIndex);
+        int nearestY = inletYs.get(nearestIndex);
+        return new FinalReport(inletIds, inletXs, inletYs, emergencyId, emergencyX, emergencyY,
+                inletIds.get(nearestIndex), nearestX, nearestY);
     }
 
     public String getClosestInlet() {

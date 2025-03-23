@@ -1,4 +1,4 @@
-package ca.mcmaster.se2aa4.island.teamXXX.calculations;
+package ca.mcmaster.se2aa4.island.teamXXX.reporting;
 
 import java.util.HashSet;
 import java.util.List;

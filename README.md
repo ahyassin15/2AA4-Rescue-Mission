@@ -1,4 +1,8 @@
 # Assignment A2 - Rescue mission
+# The Team:
+- [Muhammad Daud](https://github.com/D4ud)
+- [Hassan Omran](https://github.com/hassan-omran21)
+- [Ahmed Yassin](https://github.com/ahyassin15)
 
 ## Product Description
 

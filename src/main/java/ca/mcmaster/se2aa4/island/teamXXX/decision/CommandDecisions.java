@@ -15,5 +15,7 @@ public interface CommandDecisions {
 
     Direction getCurrentDirection();
 
+    String generateFinalReport();
+
     String getClosestInlet();
 }

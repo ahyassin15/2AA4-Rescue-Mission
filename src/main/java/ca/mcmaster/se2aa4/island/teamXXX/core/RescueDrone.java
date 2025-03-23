@@ -8,6 +8,7 @@ import ca.mcmaster.se2aa4.island.teamXXX.decision.CommandDecisions;
 import ca.mcmaster.se2aa4.island.teamXXX.decision.find.FindIsland;
 import ca.mcmaster.se2aa4.island.teamXXX.decision.patrol.PatrolIsland;
 import ca.mcmaster.se2aa4.island.teamXXX.tracking.BudgetTracker;
+import ca.mcmaster.se2aa4.island.teamXXX.reporting.FinalReport;
 import org.json.JSONObject;
 
 public class RescueDrone {
@@ -49,6 +50,10 @@ public class RescueDrone {
         } else {
             return getBatteryLevelDrone() <= (initialBatteryLevel * 0.002);
         }
+    }
+
+    public String generateFinalReport() {
+        return areaScanner.generateFinalReport();
     }
 
     public String getClosestInlet() {
