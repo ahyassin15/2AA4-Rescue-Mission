@@ -1,70 +1,68 @@
 package ca.mcmaster.se2aa4.island.teamXXX;
 
-import java.io.StringReader;
+import ca.mcmaster.se2aa4.island.teamXXX.communication.ActionCommand;
+import ca.mcmaster.se2aa4.island.teamXXX.core.Direction;
+import ca.mcmaster.se2aa4.island.teamXXX.core.RescueDrone;
+import ca.mcmaster.se2aa4.island.teamXXX.data.SensorData;
+import ca.mcmaster.se2aa4.island.teamXXX.parsing.DirectionInterpreter;
+import ca.mcmaster.se2aa4.island.teamXXX.parsing.ResponseParser;
+import eu.ace_design.island.bot.IExplorerRaid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import eu.ace_design.island.bot.IExplorerRaid;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.io.StringReader;
+
 public class Explorer implements IExplorerRaid {
-
+    private final ResponseParser translator = new ResponseParser();
     private final Logger logger = LogManager.getLogger();
-
-    private Compass compass;
-    private Decisions decisionMaker;
-
-    // We store the "current" phase of our exploration logic here:
-    private ExplorationPhase currentPhase;
+    private RescueDrone rescueDrone;
+    private final DirectionInterpreter directionInterpreter = new DirectionInterpreter();
+    public JSONObject extras;
 
     @Override
     public void initialize(String s) {
         logger.info("** Initializing the Exploration Command Center");
-
-        // Parse the JSON init data
         JSONObject info = new JSONObject(new JSONTokener(new StringReader(s)));
-        logger.info("** Initialization info:\n {}", info.toString(2));
-
-        this.decisionMaker = new Decisions();
-        this.compass = new Compass(info.getString("heading"));
-
-        int batteryLevel = info.getInt("budget");
-        logger.info("The drone is facing {}", compass.current());
-        logger.info("Battery level is {}", batteryLevel);
-
-        // Start in "FindIsland" mode:
-        this.currentPhase = new FindIsland(decisionMaker, compass);
-    }
-
-    @Override
-    public String takeDecision() {
-        // Delegate to the current phase
-        String action = currentPhase.nextDecision();
-        logger.info("** nextDecision => {}", action);
-        return action;
+        logger.info("** Initialization info:\n " + info.toString(2));
+        String direction = info.getString("heading");
+        Integer batteryLevel = info.getInt("budget");
+        logger.info("The drone is facing " + direction);
+        logger.info("Battery level is " + batteryLevel);
+        Direction currentDirection = directionInterpreter.translateDirection(direction);
+        rescueDrone = new RescueDrone(batteryLevel, currentDirection);
+        logger.info("finished initializing");
     }
 
     @Override
     public void acknowledgeResults(String s) {
-        // prints returned values from take Decision helping in testing
-        // also dissects the returned value to translate the JSON objects
-        logger.info("** Acknowledging results => {}", s);
-
-        currentPhase.acknowledgeResults(s);
-
-        // If we are still in FindIsland, check if we've reached the ground
-        if (currentPhase instanceof FindIsland) {
-            FindIsland fi = (FindIsland) currentPhase;
-            if (fi.isIslandReached()) {
-                logger.info("** Switching from FindIsland to PatrolIsland!");
-                currentPhase = new PatrolIsland(decisionMaker, compass);
-            }
-        }
+        JSONObject response = new JSONObject(new JSONTokener(new StringReader(s)));
+        SensorData info = translator.translate(response);
+        logger.info("** Response received:\n" + response.toString(2));
+        int cost = response.getInt("cost");
+        logger.info("The cost of the action was " + cost);
+        String status = response.getString("status");
+        logger.info("The status of the drone is " + status);
+        JSONObject extraInfo = response.getJSONObject("extras");
+        extras = extraInfo;
+        logger.info("Additional information received: " + extraInfo);
+        rescueDrone.getInfo(info);
     }
 
+    @Override
+    public String takeDecision() {
+        JSONObject decision;
+        ActionCommand command = rescueDrone.makeDecision();
+        decision = command.commandTranslator();
+        logger.info("Battery: " + rescueDrone.getBatteryLevelDrone());
+        logger.info(decision.toString());
+        return decision.toString();
+    }
 
     @Override
     public String deliverFinalReport() {
-        return "No creek found or final report not implemented";
+        logger.info("The closest creek is " + rescueDrone.getClosestInlet());
+        return rescueDrone.getClosestInlet();
     }
 }
