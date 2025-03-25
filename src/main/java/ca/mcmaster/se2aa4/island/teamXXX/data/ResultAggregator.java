@@ -51,23 +51,19 @@ public class ResultAggregator {
         return groundFound;
     }
 
-    public boolean inletIsFound() {
-        boolean inletFound;
+    public int inletIsFound() {
+        int creeksAdded = 0;
         if (extras.has("creeks")) {
             JSONArray creeksArray = extras.getJSONArray("creeks");
-            if (creeksArray.isEmpty()) {
-                inletFound = false;
-            } else {
-                for (int i = 0; i < creeksArray.length(); i++) {
-                    String inlet = creeksArray.getString(i);
+            for (int i = 0; i < creeksArray.length(); i++) {
+                String inlet = creeksArray.getString(i);
+                if (!inletIds.contains(inlet)) {
                     inletIds.add(inlet);
+                    creeksAdded++;
                 }
-                inletFound = true;
             }
-        } else {
-            inletFound = false;
         }
-        return inletFound;
+        return creeksAdded;
     }
 
     public int distance() {

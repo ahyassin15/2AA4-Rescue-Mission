@@ -87,10 +87,13 @@ public class PatrolIsland implements CommandDecisions {
         int emergencySiteX;
         int emergencySiteY;
         if (checkedForSite) {
-            if (data.inletIsFound()) {
+            int newCreeks = data.inletIsFound();
+            if (newCreeks > 0) {
                 inletX = map.getCurrentX();
                 inletY = map.getCurrentY();
-                data.storeCoordinates(inletX, inletY);
+                for (int i = 0; i < newCreeks; i++) {
+                    data.storeCoordinates(inletX, inletY);
+                }
             }
             if (data.emergencySiteIsFound()) {
                 emergencySiteX = map.getCurrentX();
@@ -204,13 +207,18 @@ public class PatrolIsland implements CommandDecisions {
             ActionCommand command;
             data.initializeExtras(currentInformation);
             if (drone.range > 0) {
-                drone.switchState(new FlyState());
-                command = droneController.fly();
+                if (drone.range <= 1) {
+                    command = drone.scanGridSearch();
+                    drone.checkedForSite = true;
+                } else {
+                    command = droneController.fly();
+                }
                 drone.range--;
+                drone.switchState(new FlyState());
             } else {
-                drone.switchState(new ScanState());
                 command = drone.scanGridSearch();
                 drone.checkedForSite = true;
+                drone.switchState(new ScanState());
             }
             return command;
         }

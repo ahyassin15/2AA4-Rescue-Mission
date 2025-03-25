@@ -23,7 +23,7 @@ public class NearestInletFinder {
 
     public String calculateNearestInlet() {
         Set<String> visitedCoordinates = new HashSet<>();
-        double distance = 0;
+        double distance;
         for (int i = 0; i < inletXs.size(); i++) {
             int x = inletXs.get(i);
             int y = inletYs.get(i);

@@ -55,7 +55,7 @@ public class Explorer implements IExplorerRaid {
         JSONObject decision;
         ActionCommand command = rescueDrone.makeDecision();
         decision = command.commandTranslator();
-        logger.info("Battery: " + rescueDrone.getBatteryLevelDrone());
+        logger.info("Battery Level: " + rescueDrone.getBatteryLevelDrone());
         logger.info(decision.toString());
         return decision.toString();
     }

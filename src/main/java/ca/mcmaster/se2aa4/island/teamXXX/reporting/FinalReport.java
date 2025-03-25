@@ -10,8 +10,6 @@ public class FinalReport {
     private final int emergencyX;
     private final int emergencyY;
     private final String nearestCreekId;
-    private final int nearestCreekX;
-    private final int nearestCreekY;
     private final double nearestDist;
 
     public FinalReport(ArrayList<String> creekIds, ArrayList<Integer> creekXs, ArrayList<Integer> creekYs, String emergencyId,
@@ -23,8 +21,6 @@ public class FinalReport {
         this.emergencyX = emergencyX;
         this.emergencyY = emergencyY;
         this.nearestCreekId = nearestCreekId;
-        this.nearestCreekX = nearestCreekX;
-        this.nearestCreekY = nearestCreekY;
         this.nearestDist = Math.sqrt(
                 Math.pow(nearestCreekX - emergencyX, 2) +
                         Math.pow(nearestCreekY - emergencyY, 2)
